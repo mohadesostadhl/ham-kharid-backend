@@ -1,16 +1,17 @@
 # Testing and verification
 
-This document records executed checks and their scope. Final integration results are
-updated after browser testing. No public deployment is part of this delivery.
+This document records checks executed on 2026-10-27 and their scope.
+No public deployment is part of this delivery.
 
 ## Backend
 
-`uv run python manage.py test --noinput`: 16 tests pass against a file-backed SQLite
+`uv run python manage.py test --noinput`: 17 tests pass against a file-backed SQLite
 test database. Tests cover public visibility, search/filtering, seller creation and
 publication, buyer reserve/cancel, cumulative limits and capacity, deadlines, success
 and failure settlement, one-order idempotence, access control, password/role validation,
 real session CSRF enforcement, fulfillment transitions, database constraints, demo
-production guard, and a two-thread/two-connection last-slot race.
+production guard, repeatable seeding across every campaign state, and a
+two-thread/two-connection last-slot race.
 
 Test classes use the MD5 password hasher only to avoid slow password hashing in unit
 tests. Application and seeded users retain Django's default secure password hasher.
@@ -21,9 +22,9 @@ Demo seeding and one-shot deadline processing have been executed.
 
 ## Frontend and integration
 
-ESLint and Nuxt TypeScript checks pass after aligning Vue Router with Nuxt's installed
-dependency requirements. Production build and browser results are recorded below when
-complete. `tests/marketplace.spec.ts` is the reproducible integration suite.
+ESLint, Prettier, Nuxt TypeScript checks, and the Nuxt production build pass after
+aligning Vue Router with Nuxt's installed dependency requirements.
+`tests/marketplace.spec.ts` is the reproducible integration suite.
 
 Run with backend and frontend on 8000/3000, seeded demo data, and installed Microsoft
 Edge (Playwright channel msedge). Use E2E_BASE_URL to select another frontend origin.
@@ -51,4 +52,41 @@ deployment. No downgrade or forced audit repair is applied merely to hide the fi
 
 ## Final integration record
 
-Pending production build and browser suite execution.
+`npm.cmd run test:e2e`: **8 passed**, run against the production Nuxt Node server
+and the Django/SQLite API, using Playwright with installed Microsoft Edge.
+
+| Check | Executed result |
+|---|---|
+| API connectivity through Nuxt | HTTP 200; reports `database: sqlite` |
+| Public discovery | Listing, category filtering, product/title search, empty results pass |
+| Buyer workflow | Real login, CSRF-protected reservation, reload persistence, cumulative limit, cancellation dialog, logout pass |
+| Seller workflow | New account, product creation, draft campaign, publication pass |
+| Campaign and order integration | Buyer reaches threshold; real deadline command creates order; seller records shipment and delivery |
+| Signed-in phone screens | Buyer reservations/orders, seller table, product/campaign forms pass overflow checks |
+| Responsive routes | Catalog, detail, login, guide, account, seller at 375/768/1024px pass |
+| Desktop | 1440px catalog and seller workflow pass |
+| Automated accessibility | Zero axe violations in scanned WCAG A/AA rule sets on the tested routes and mobile seller form/dashboard |
+| Browser runtime | No uncaught page errors in discovery test |
+| Recovery | Simulated API failure displays retry; retry restores catalog |
+| Visual review | Desktop catalog/seller and mobile login/detail/seller/form screenshots inspected |
+
+Contrast findings from the first scan were fixed by darkening secondary text and
+accent labels. A duplicate login-page heading was corrected. The final suite passes
+without skipping tests or suppressing accessibility rules.
+
+Generated artifacts: `frontend/playwright-report/index.html` and
+`frontend/test-results/`. These remain ignored by Git. After verification the
+integration database is archived at parent `.runtime/verified-integration.sqlite3`,
+and the normal development database is freshly migrated and seeded for presentation.
+Future E2E runs add their own fictional records to the selected local database.
+
+Both independent repositories finish on `main` with clean working trees and local
+feature/test merge commits. Neither has a remote. No source was published or pushed.
+
+## Verification limits
+
+The suite verifies the stated local MVP, not real payment, delivery, load endurance,
+complete manual screen-reader behavior, or a production deployment. The SQLite
+concurrency test proves the tested last-slot race; it is not a throughput benchmark.
+Upstream dependency risk remains as documented above. Runtime servers and the worker
+are stopped after verification; restart them using SETUP_GUIDE.md.

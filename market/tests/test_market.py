@@ -76,7 +76,7 @@ class BusinessTests(TestCase):
     def test_failure_releases_and_produces_no_order(self):
         reservation = reserve(self.campaign.pk, self.buyer, 1)
         self.campaign.deadline = timezone.now() - timedelta(seconds=1)
-        self.campaign.save()
+        self.campaign.save(update_fields=["deadline"])
         call_command("process_deadlines", verbosity=0)
         reservation.refresh_from_db()
         self.campaign.refresh_from_db()
@@ -176,6 +176,17 @@ class ApiTests(TestCase):
             )
             self.assertEqual(response.status_code, 400)
         self.client.force_authenticate(self.seller)
+        for price in (0, -1, 10_000_000_001):
+            invalid_product = self.client.post(
+                "/api/products/",
+                {
+                    "name": "invalid price",
+                    "description": "test",
+                    "category": self.product.category_id,
+                    "retail_price": price,
+                },
+            )
+            self.assertEqual(invalid_product.status_code, 400)
         response = self.client.post(
             "/api/campaigns/",
             {
@@ -251,6 +262,18 @@ class ApiTests(TestCase):
         self.assertEqual(self.client.get("/api/health/").data["database"], "sqlite")
         self.assertEqual(self.client.get("/api/campaigns/?category=missing").data["count"], 0)
         self.assertEqual(self.client.get("/api/campaigns/?search=قهوه").data["count"], 1)
+
+    @override_settings(DEBUG=True)
+    def test_demo_seed_is_repeatable_and_covers_all_campaign_states(self):
+        call_command("seed_demo", verbosity=0)
+        models = (User, Category, Product, Campaign, Reservation, Order)
+        counts = [model.objects.count() for model in models]
+        call_command("seed_demo", verbosity=0)
+        self.assertEqual([model.objects.count() for model in models], counts)
+        self.assertEqual(
+            set(Campaign.objects.values_list("status", flat=True)), set(Campaign.Status.values)
+        )
+        self.assertEqual(Order.objects.count(), 2)
 
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])

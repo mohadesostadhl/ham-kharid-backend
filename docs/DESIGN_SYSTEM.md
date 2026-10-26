@@ -12,14 +12,14 @@ Defined centrally in `frontend/app/assets/main.css`.
 |---|---|---|
 | ink | #203c34 | Headings and structural emphasis |
 | text | #354b43 | Body copy |
-| muted | #68756e | Secondary information |
+| muted | #5d6b62 | Secondary information |
 | green | #255846 | Primary actions and progress |
 | green-dark | #193e32 | Hover/active emphasis |
 | green-soft | #eaf1e9 | Supporting surfaces |
 | cream | #f8f8f2 | Page background |
 | paper | #ffffff | Cards and forms |
 | line | #dce2d9 | Boundaries |
-| accent | #b57046 | Editorial highlights |
+| accent | #97552f | Editorial highlights |
 | danger | #a13232 | Destructive confirmation |
 
 Vazirmatn is bundled locally at weights 400, 500, 600, 700. Base type is 15px;
