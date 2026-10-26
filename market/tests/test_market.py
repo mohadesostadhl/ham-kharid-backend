@@ -76,7 +76,7 @@ class BusinessTests(TestCase):
     def test_failure_releases_and_produces_no_order(self):
         reservation = reserve(self.campaign.pk, self.buyer, 1)
         self.campaign.deadline = timezone.now() - timedelta(seconds=1)
-        self.campaign.save()
+        self.campaign.save(update_fields=["deadline"])
         call_command("process_deadlines", verbosity=0)
         reservation.refresh_from_db()
         self.campaign.refresh_from_db()
