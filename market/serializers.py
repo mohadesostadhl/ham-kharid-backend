@@ -40,6 +40,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    retail_price = serializers.IntegerField(min_value=1, max_value=10_000_000_000)
     seller_name = serializers.CharField(source="seller.display_name", read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
 

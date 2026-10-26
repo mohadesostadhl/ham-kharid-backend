@@ -176,6 +176,17 @@ class ApiTests(TestCase):
             )
             self.assertEqual(response.status_code, 400)
         self.client.force_authenticate(self.seller)
+        for price in (0, -1, 10_000_000_001):
+            invalid_product = self.client.post(
+                "/api/products/",
+                {
+                    "name": "invalid price",
+                    "description": "test",
+                    "category": self.product.category_id,
+                    "retail_price": price,
+                },
+            )
+            self.assertEqual(invalid_product.status_code, 400)
         response = self.client.post(
             "/api/campaigns/",
             {
