@@ -263,6 +263,18 @@ class ApiTests(TestCase):
         self.assertEqual(self.client.get("/api/campaigns/?category=missing").data["count"], 0)
         self.assertEqual(self.client.get("/api/campaigns/?search=قهوه").data["count"], 1)
 
+    @override_settings(DEBUG=True)
+    def test_demo_seed_is_repeatable_and_covers_all_campaign_states(self):
+        call_command("seed_demo", verbosity=0)
+        models = (User, Category, Product, Campaign, Reservation, Order)
+        counts = [model.objects.count() for model in models]
+        call_command("seed_demo", verbosity=0)
+        self.assertEqual([model.objects.count() for model in models], counts)
+        self.assertEqual(
+            set(Campaign.objects.values_list("status", flat=True)), set(Campaign.Status.values)
+        )
+        self.assertEqual(Order.objects.count(), 2)
+
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class ConcurrencyTests(TransactionTestCase):
