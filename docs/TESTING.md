@@ -85,6 +85,23 @@ feature/test merge commits. Neither has a remote. No source was published or pus
 
 ## Verification limits
 
+### Shadcn-style refresh (2026-10-27)
+
+The neutral theme was rebuilt and the full eight-test browser suite rerun:
+**8 passed**. ESLint, Prettier, and Nuxt type checks also pass. Desktop catalog and
+seller screenshots plus mobile login, seller dashboard, and campaign forms were
+visually reviewed. A shared input selector regression found during screenshot
+review was corrected before the final run; no accessibility rules were suppressed.
+
+The final refresh run used the production UI on port 3101, an isolated Django API
+on 8001, and a temporary QA routing origin on 3100. Both API requests and deadline
+commands used parent `.runtime/shadcn-qa.sqlite3`. Existing user development servers
+on 3000/8000 were retained. The application API proxy configuration is unchanged.
+Stored credentials for seller_demo, seller_second, buyer_demo, and buyer_demo_2
+were verified against the normal local database.
+
+### Scope
+
 The suite verifies the stated local MVP, not real payment, delivery, load endurance,
 complete manual screen-reader behavior, or a production deployment. The SQLite
 concurrency test proves the tested last-slot race; it is not a throughput benchmark.
