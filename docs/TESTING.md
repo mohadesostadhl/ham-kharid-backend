@@ -5,13 +5,20 @@ No public deployment is part of this delivery.
 
 ## Backend
 
-`uv run python manage.py test --noinput`: 17 tests pass against a file-backed SQLite
+`uv run python manage.py test --noinput`: 36 tests pass against a file-backed SQLite
 test database. Tests cover public visibility, search/filtering, seller creation and
 publication, buyer reserve/cancel, cumulative limits and capacity, deadlines, success
 and failure settlement, one-order idempotence, access control, password/role validation,
 real session CSRF enforcement, fulfillment transitions, database constraints, demo
 production guard, repeatable seeding across every campaign state, and a
 two-thread/two-connection last-slot race.
+
+Admin and wallet coverage includes staff/model permissions, CSRF, hashed custom-user
+creation, immutable transaction fields, workflow actions, insufficient-funds rollback,
+incremental charges, price snapshots, refund idempotence, legacy unpaid reservations,
+private history, top-up amount validation and environment guard. Concurrent tests
+verify that separate campaigns cannot spend the same wallet balance twice and that
+simultaneous retries of one top-up produce one credit.
 
 Test classes use the MD5 password hasher only to avoid slow password hashing in unit
 tests. Application and seeded users retain Django's default secure password hasher.
@@ -84,6 +91,18 @@ Both independent repositories finish on `main` with clean working trees and loca
 feature/test merge commits. Neither has a remote. No source was published or pushed.
 
 ## Verification limits
+
+### Wallet and color refresh (2026-10-27)
+
+The nine-test browser suite passed against isolated `backend/wallet-qa.sqlite3`,
+Django on port 8005 and Nuxt on 3105. Coverage includes fake top-up, insufficient
+funds, successful ordering without a second debit, failed-campaign refund exactly
+once, cancellation, private account screens and transaction history. Seller order
+fulfillment still passes. Automated accessibility and overflow checks pass at
+375/768/1024px and on the desktop wallet. Desktop home/account and mobile account
+screenshots were visually inspected. Existing development servers/databases were
+not used for these browser tests. The normal development database received only
+the new schema/data migrations, preserving its existing records and balances.
 
 ### Shadcn-style refresh (2026-10-27)
 

@@ -9,8 +9,9 @@ The Persian web application supports buyers and sellers. Buyers discover campaig
 reserve within limits, cancel before the deadline, and follow orders. Sellers create
 products, publish campaigns, and record shipment and delivery.
 
-This is an academic MVP with fictional demonstration data. It does not collect payment,
-shipping addresses, or real fulfillment commitments. Payment and shipping coordination
+This is an academic MVP with fictional demonstration data and a simulated wallet.
+It does not collect real payments, shipping addresses, or real fulfillment commitments.
+Real payment and shipping coordination
 are explicitly outside the application. Product illustrations are original SVG artwork,
 not photographs of actual goods.
 
