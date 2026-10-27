@@ -5,7 +5,7 @@ from django.forms import ModelForm
 from django.utils import timezone
 
 from .exceptions import BusinessError
-from .models import Campaign, Category, Order, Product, Reservation, User
+from .models import Campaign, Category, Order, Product, Reservation, User, WalletTransaction
 from .services import advance_order, cancel_reservation, publish_campaign, settle_campaign
 
 admin.site.site_header = "Hamkharid administration"
@@ -15,7 +15,11 @@ admin.site.index_title = "Marketplace management"
 
 @admin.register(User)
 class MarketplaceUserAdmin(UserAdmin):
-    fieldsets = (*UserAdmin.fieldsets, ("Marketplace", {"fields": ("display_name", "role")}))
+    fieldsets = (
+        *UserAdmin.fieldsets,
+        ("Marketplace", {"fields": ("display_name", "role", "wallet_balance")}),
+    )
+    readonly_fields = ("wallet_balance",)
     add_fieldsets = (
         *UserAdmin.add_fieldsets,
         ("Marketplace", {"fields": ("display_name", "role")}),
@@ -161,3 +165,14 @@ class OrderAdmin(TransactionAdmin):
     @admin.action(description="Mark selected shipped orders as completed", permissions=["change"])
     def complete(self, request, queryset):
         self.advance(request, queryset, Order.Status.COMPLETED)
+
+
+@admin.register(WalletTransaction)
+class WalletTransactionAdmin(TransactionAdmin):
+    list_display = ("id", "user", "kind", "amount", "balance_after", "created_at")
+    list_filter = ("kind",)
+    search_fields = ("user__username", "reservation__campaign__title")
+    list_select_related = ("user", "reservation")
+
+    def has_change_permission(self, request, obj=None):
+        return False

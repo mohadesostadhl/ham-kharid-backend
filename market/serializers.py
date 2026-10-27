@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Campaign, Category, Order, Product, Reservation, User
+from .models import Campaign, Category, Order, Product, Reservation, User, WalletTransaction
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -115,7 +115,20 @@ class ReservationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Reservation
-        fields = ["id", "campaign", "quantity", "status", "created_at"]
+        fields = ["id", "campaign", "quantity", "unit_price", "paid_amount", "status", "created_at"]
+
+
+class WalletTransactionSerializer(serializers.ModelSerializer):
+    campaign_title = serializers.CharField(source="reservation.campaign.title", default=None)
+
+    class Meta:
+        model = WalletTransaction
+        fields = ["id", "kind", "amount", "balance_after", "campaign_title", "created_at"]
+
+
+class TopUpSerializer(serializers.Serializer):
+    amount = serializers.IntegerField(min_value=10_000, max_value=10_000_000)
+    reference = serializers.UUIDField()
 
 
 class ReserveSerializer(serializers.Serializer):

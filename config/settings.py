@@ -3,6 +3,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+FAKE_WALLET_ENABLED = DEBUG
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "development-only-change-before-deploying")
 if not DEBUG and SECRET_KEY == "development-only-change-before-deploying":
     raise RuntimeError("Set DJANGO_SECRET_KEY in production.")

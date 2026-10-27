@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+from uuid import uuid4
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -7,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from market.models import Campaign, Category, Product, User
-from market.services import reserve, settle_campaign
+from market.services import reserve, settle_campaign, top_up_wallet
 
 
 class Command(BaseCommand):
@@ -40,6 +41,7 @@ class Command(BaseCommand):
             if created:
                 buyer.set_password(password)
                 buyer.save()
+                top_up_wallet(buyer, 10_000_000, uuid4())
             buyers.append(buyer)
         categories = [
             Category.objects.get_or_create(slug=slug, defaults={"name": name})[0]

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.db import connection
 from django.db.models import Count, Q
@@ -14,7 +15,7 @@ from rest_framework.views import APIView
 from . import serializers as s
 from . import services
 from .exceptions import BusinessError
-from .models import Campaign, Category, Order, Product, Reservation
+from .models import Campaign, Category, Order, Product, Reservation, User, WalletTransaction
 
 
 class SessionView(APIView):
@@ -65,6 +66,31 @@ class LogoutView(APIView):
     def post(self, request):
         logout(request)
         return Response({"user": None, "csrf_token": get_token(request)})
+
+
+class WalletView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != User.Role.BUYER:
+            raise BusinessError("کیف پول ویژهٔ حساب خریدار است.")
+        # Keep history bounded for this small demo; all entries remain in admin.
+        entries = WalletTransaction.objects.filter(user=request.user).select_related(
+            "reservation__campaign"
+        )[:50]
+        return Response(
+            {
+                "balance": User.objects.get(pk=request.user.pk).wallet_balance,
+                "fake_top_up_enabled": settings.FAKE_WALLET_ENABLED,
+                "transactions": s.WalletTransactionSerializer(entries, many=True).data,
+            }
+        )
+
+    def post(self, request):
+        serializer = s.TopUpSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.top_up_wallet(request.user, **serializer.validated_data)
+        return self.get(request)
 
 
 class HealthView(APIView):

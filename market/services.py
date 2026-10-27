@@ -1,8 +1,62 @@
+from uuid import UUID
+
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from .exceptions import BusinessError
-from .models import Campaign, Order, Reservation, User
+from .models import Campaign, Order, Reservation, User, WalletTransaction
+
+
+def _change_balance(
+    user_id: int,
+    amount: int,
+    kind: str,
+    reservation: Reservation | None = None,
+    reference: UUID | None = None,
+) -> WalletTransaction:
+    user = User.objects.select_for_update().get(pk=user_id)
+    if user.wallet_balance + amount < 0:
+        raise BusinessError("موجودی کیف پول کافی نیست. ابتدا کیف پول را شارژ کنید.")
+    user.wallet_balance += amount
+    user.save(update_fields=["wallet_balance"])
+    return WalletTransaction.objects.create(
+        user=user,
+        amount=amount,
+        kind=kind,
+        balance_after=user.wallet_balance,
+        reservation=reservation,
+        reference=reference,
+    )
+
+
+@transaction.atomic
+def top_up_wallet(user: User, amount: int, reference: UUID) -> WalletTransaction:
+    if not settings.FAKE_WALLET_ENABLED:
+        raise BusinessError("شارژ نمایشی در این محیط غیرفعال است.")
+    if user.role != User.Role.BUYER:
+        raise BusinessError("کیف پول ویژهٔ حساب خریدار است.")
+    if not 10_000 <= amount <= 10_000_000:
+        raise BusinessError("مبلغ شارژ باید بین ۱۰٬۰۰۰ و ۱۰٬۰۰۰٬۰۰۰ تومان باشد.")
+    # Lock the wallet before checking retries, so the same request credits only once.
+    User.objects.select_for_update().get(pk=user.pk)
+    existing = WalletTransaction.objects.filter(reference=reference).first()
+    if existing:
+        if existing.user_id != user.pk or existing.amount != amount:
+            raise BusinessError("شناسهٔ این درخواست قبلاً استفاده شده است.")
+        return existing
+    return _change_balance(user.pk, amount, WalletTransaction.Kind.TOP_UP, reference=reference)
+
+
+def _refund_reservation(reservation: Reservation) -> None:
+    if reservation.paid_amount:
+        _change_balance(
+            reservation.buyer_id,
+            reservation.paid_amount,
+            WalletTransaction.Kind.REFUND,
+            reservation=reservation,
+        )
+        reservation.paid_amount = 0
 
 
 def require_seller(user: User) -> None:
@@ -54,11 +108,19 @@ def reserve(campaign_id: int, buyer: User, quantity: int) -> Reservation:
     if campaign.reserved_quantity + quantity > campaign.capacity:
         raise BusinessError("ظرفیت باقی‌مانده برای این تعداد کافی نیست.")
     if reservation:
+        if not previous:
+            reservation.unit_price = campaign.group_price
         reservation.quantity = previous + quantity
         reservation.status = Reservation.Status.ACTIVE
-        reservation.save(update_fields=["quantity", "status", "updated_at"])
     else:
-        reservation = Reservation.objects.create(buyer=buyer, campaign=campaign, quantity=quantity)
+        reservation = Reservation(
+            buyer=buyer, campaign=campaign, quantity=quantity, unit_price=campaign.group_price
+        )
+    reservation.save()
+    amount = quantity * reservation.unit_price
+    _change_balance(buyer.pk, -amount, WalletTransaction.Kind.PAYMENT, reservation=reservation)
+    reservation.paid_amount += amount
+    reservation.save(update_fields=["paid_amount"])
     campaign.reserved_quantity += quantity
     update_threshold(campaign)
     return reservation
@@ -74,7 +136,8 @@ def cancel_reservation(reservation_id: int, buyer: User) -> Reservation:
     if reservation.status != Reservation.Status.ACTIVE:
         raise BusinessError("این رزرو فعال نیست.")
     reservation.status = Reservation.Status.CANCELLED
-    reservation.save(update_fields=["status", "updated_at"])
+    _refund_reservation(reservation)
+    reservation.save(update_fields=["status", "paid_amount", "updated_at"])
     campaign.reserved_quantity -= reservation.quantity
     update_threshold(campaign)
     return reservation
@@ -90,10 +153,12 @@ def settle_campaign(campaign_id: int) -> bool:
         if successful:
             Order.objects.get_or_create(
                 reservation=reservation,
-                defaults={"unit_price": campaign.group_price, "quantity": reservation.quantity},
+                defaults={"unit_price": reservation.unit_price, "quantity": reservation.quantity},
             )
+        else:
+            _refund_reservation(reservation)
         reservation.status = "converted" if successful else "released"
-        reservation.save(update_fields=["status", "updated_at"])
+        reservation.save(update_fields=["status", "paid_amount", "updated_at"])
     campaign.status = Campaign.Status.SUCCESSFUL if successful else Campaign.Status.FAILED
     campaign.save(update_fields=["status"])
     return True
