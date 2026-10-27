@@ -1,3 +1,4 @@
+from django.contrib import admin
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
@@ -11,6 +12,7 @@ router.register("reservations", views.ReservationViewSet, basename="reservation"
 router.register("orders", views.OrderViewSet, basename="order")
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
     path("api/health/", views.HealthView.as_view()),
     path("api/auth/session/", views.SessionView.as_view()),
     path("api/auth/login/", views.LoginView.as_view()),
