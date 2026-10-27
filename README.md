@@ -18,6 +18,10 @@ uv run python manage.py process_deadlines --watch
 Frontend lives in the independent sibling `../frontend` repository.
 Open http://127.0.0.1:3000 after starting it. Use the same hostname consistently.
 
+For the Django admin, run `uv run python manage.py createsuperuser` after migrating,
+then open http://127.0.0.1:8000/admin/ with the backend running.
+See the setup guide for permissions and marketplace management actions.
+
 See [setup and development demo accounts](docs/SETUP_GUIDE.md),
 [architecture](docs/ARCHITECTURE.md), [test results](docs/TESTING.md),
 and [Persian presentation guide](docs/PRESENTATION_GUIDE.md).

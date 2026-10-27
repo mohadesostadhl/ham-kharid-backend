@@ -70,6 +70,42 @@ Frontend: `npm.cmd run lint`, `npm.cmd run format:check`, `npm.cmd run typecheck
 Set HOST=127.0.0.1 before preview to restrict listening to loopback.
 Both backend and frontend must be running for `npm.cmd run test:e2e`.
 
+## Django administration
+
+From the backend directory, apply migrations and create your own administrator:
+
+```powershell
+uv run python manage.py migrate
+uv run python manage.py createsuperuser
+uv run python manage.py runserver 127.0.0.1:8000
+```
+
+Open http://127.0.0.1:8000/admin/ and log in using the credentials you chose.
+The admin is served by Django on port 8000. Demo buyer/seller accounts do not have
+admin access. No default admin password is created. Reset a forgotten password with
+`uv run python manage.py changepassword YOUR_USERNAME`.
+
+Manage users (including marketplace role, display name, passwords, staff status,
+groups and permissions), categories and products. Create and edit draft campaigns,
+then select them in the campaign list and use **Publish selected drafts**.
+Published campaigns are read-only; **Settle selected campaigns past their deadline**
+uses the same settlement logic as the deadline worker.
+
+Reservations and orders are created through the marketplace workflow and are
+read-only in admin. Use the reservation cancellation action to release capacity,
+and the order actions to advance confirmed → shipped → completed. Invalid actions
+display an error without changing that record. These records and campaigns cannot
+be deleted through admin. This preserves stock counters and order price snapshots.
+
+For additional administrators, enable **Staff status** and grant the required model
+permissions individually or through groups. View permission allows inspection;
+change permission also enables the corresponding workflow actions. Superusers have
+all permissions. The admin uses the project's Persian locale and Tehran timezone.
+
+Local `runserver` serves admin CSS/JS automatically. For deployment, run
+`uv run python manage.py collectstatic --noinput` and configure your static-file
+server to serve `/static/` from `backend/staticfiles/`.
+
 ## Public deployment boundary
 
 This delivery is local-only. Production needs DEBUG=0, a unique secret key, HTTPS,

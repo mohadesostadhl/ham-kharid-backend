@@ -4,6 +4,7 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 .env
+staticfiles/
 *.sqlite3
 *.sqlite3-journal
 *.sqlite3-wal
