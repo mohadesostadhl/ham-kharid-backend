@@ -59,6 +59,12 @@ to override it. These credentials are development-only; seed_demo refuses to run
 when DJANGO_DEBUG=0. Never seed a production environment or reuse this password.
 The frontend bundle does not include demo credentials.
 
+Newly seeded demo buyers receive a recorded 10,000,000 toman fictional wallet top-up.
+Existing users are not reset or automatically credited: use **شارژ نمایشی کیف پول**
+in **خریدهای من**. New signups start with zero balance. No real payment is involved.
+Keep the deadline worker running so unsuccessful campaigns refund their buyers;
+refresh the account page after processing to see the balance and history.
+
 ## Build and checks
 
 Backend: `uv run python manage.py test --noinput`, `uv run ruff check .`,

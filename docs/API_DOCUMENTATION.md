@@ -10,6 +10,8 @@ origin in the browser. Session cookies and `X-CSRFToken` protect mutations.
 | POST | auth/signup/ | CSRF | username, password, display_name, role (buyer/seller) |
 | POST | auth/login/ | CSRF | username, password; rotates CSRF token |
 | POST | auth/logout/ | Auth + CSRF | Ends session, returns fresh CSRF token |
+| GET | wallet/ | Buyer | Balance, fake_top_up_enabled, latest 50 transactions |
+| POST | wallet/ | Buyer + CSRF | Fake top-up `{amount: integer, reference: UUID}` |
 | GET | categories/ | Public | Category array |
 | GET, POST | products/ | Seller | Own products / create product |
 | GET | campaigns/ | Public | Paginated published campaigns |
@@ -42,6 +44,13 @@ Product visuals: coffee, olive, honey, tea, saffron, ceramic. Campaign responses
 embed product data, progress (0–100 toward threshold), reserved_quantity, capacity,
 and participant_count. Orders expose campaign_title, campaign_id, buyer_name,
 quantity, unit_price, total, status, created_at. No password/hash is serialized.
+
+Wallet top-up amounts range from 10,000 to 10,000,000 toman. Reuse the reference UUID
+only when retrying the same payment request; repeated references do not add credit.
+Transactions contain id, kind (top_up/payment/refund), signed amount, balance_after,
+campaign_title (nullable), and created_at. Balance and history are private to the buyer.
+Reservation responses include unit_price (captured at reservation) and paid_amount
+(zero after refund, or for historical reservations without wallet payments).
 
 ## Errors and security
 

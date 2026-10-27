@@ -11,6 +11,7 @@ class User(AbstractUser):
 
     role = models.CharField(max_length=10, choices=Role, default=Role.BUYER)
     display_name = models.CharField(max_length=100)
+    wallet_balance = models.PositiveBigIntegerField(default=0)
 
 
 class Category(models.Model):
@@ -89,6 +90,8 @@ class Reservation(models.Model):
     buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     campaign = models.ForeignKey(Campaign, on_delete=models.PROTECT, related_name="reservations")
     quantity = models.PositiveIntegerField()
+    unit_price = models.PositiveBigIntegerField(default=0)
+    paid_amount = models.PositiveBigIntegerField(default=0)
     status = models.CharField(max_length=12, choices=Status, default=Status.ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -115,3 +118,29 @@ class Order(models.Model):
 
     class Meta:
         ordering = ["-id"]
+
+
+class WalletTransaction(models.Model):
+    class Kind(models.TextChoices):
+        TOP_UP = "top_up", "شارژ نمایشی"
+        PAYMENT = "payment", "پرداخت رزرو"
+        REFUND = "refund", "بازگشت وجه"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    reservation = models.ForeignKey(Reservation, on_delete=models.PROTECT, null=True, blank=True)
+    kind = models.CharField(max_length=10, choices=Kind)
+    amount = models.BigIntegerField()
+    balance_after = models.PositiveBigIntegerField()
+    reference = models.UUIDField(unique=True, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(kind="payment", amount__lt=0) | Q(kind__in=["top_up", "refund"], amount__gt=0)
+                ),
+                name="wallet_transaction_direction",
+            ),
+        ]

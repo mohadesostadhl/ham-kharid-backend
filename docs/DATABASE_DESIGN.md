@@ -8,12 +8,15 @@ erDiagram
   USER ||--o{ RESERVATION : reserves
   CAMPAIGN ||--o{ RESERVATION : contains
   RESERVATION ||--o| ORDER : converts
+  USER ||--o{ WALLET_TRANSACTION : owns
+  RESERVATION |o--o{ WALLET_TRANSACTION : records
   USER {
     bigint id PK
     string username UK
     string password_hash
     string role
     string display_name
+    bigint wallet_balance
   }
   CATEGORY {
     bigint id PK
@@ -45,6 +48,8 @@ erDiagram
     bigint buyer_id FK
     bigint campaign_id FK
     int quantity
+    bigint unit_price
+    bigint paid_amount
     string status
   }
   ORDER {
@@ -53,6 +58,16 @@ erDiagram
     bigint unit_price
     int quantity
     string status
+  }
+  WALLET_TRANSACTION {
+    bigint id PK
+    bigint user_id FK
+    bigint reservation_id FK
+    string kind
+    bigint amount
+    bigint balance_after
+    uuid reference UK
+    datetime created_at
   }
 ```
 
@@ -67,6 +82,8 @@ in Asia/Tehran with the Persian calendar. Django creates foreign-key indexes.
 - Reservation quantity is positive; `(buyer_id, campaign_id)` is unique.
 - Order reservation is one-to-one; price and quantity are copied at settlement.
 - PROTECT relations preserve records referenced by reservations/orders.
+- Wallet balances and paid amounts are nonnegative; payments are negative ledger
+  entries, top-ups and refunds positive. Top-up UUIDs are unique.
 - Seller ownership and group-price discount are validated at the API/service boundary.
 
 `reserved_quantity` is a transactionally maintained counter. It counts committed

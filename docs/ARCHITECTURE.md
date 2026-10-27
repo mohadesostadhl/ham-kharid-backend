@@ -18,7 +18,9 @@ token; the client sends it on mutations and replaces it after login/logout.
 One Django domain app is sufficient for this MVP. Models describe storage,
 serializers validate API input, viewsets select user-visible resources, and service
 functions own business transitions. A custom AbstractUser stores an immutable role
-and display name. No generic repository layer or unnecessary inheritance is used.
+and display name, plus an integer wallet balance. An append-only WalletTransaction
+records top-ups, payments and refunds; Reservation stores its captured price and
+paid amount. No generic repository layer or unnecessary inheritance is used.
 
 ## Transaction strategy
 
@@ -34,6 +36,10 @@ BEGIN IMMEDIATE, not row locking. The calls retain a clear locking boundary if t
 database is migrated later. SQLite serializes unrelated writes too, so this design
 is appropriate for the local academic workload rather than high-throughput commerce.
 Transactions are kept short and do not include network calls.
+
+Wallet debits/refunds, their ledger entries, reservation status, and capacity counters
+commit together. Wallet rows are locked before balance changes. The same transaction
+strategy prevents concurrent purchases from spending the same funds twice.
 
 The campaign row is the serialization point in domain code. Capacity counters and
 reservation rows change in the same transaction. Deadline settlement takes the same

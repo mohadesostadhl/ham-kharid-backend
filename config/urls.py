@@ -18,5 +18,6 @@ urlpatterns = [
     path("api/auth/login/", views.LoginView.as_view()),
     path("api/auth/signup/", views.SignupView.as_view()),
     path("api/auth/logout/", views.LogoutView.as_view()),
+    path("api/wallet/", views.WalletView.as_view()),
     path("api/", include(router.urls)),
 ]

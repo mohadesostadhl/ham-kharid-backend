@@ -9,6 +9,8 @@
 | Buyer | Reserve positive quantities within remaining capacity and cumulative buyer limit | Transactional `reserve` service |
 | Buyer | Cancel an active reservation before the deadline | Cancellation confirmation and transactional service |
 | Buyer | View only own reservations and orders | Queryset filtering and account screen |
+| Buyer | Top up a fictional wallet and inspect own transactions | Account wallet panel and authenticated wallet API |
+| System | Debit reservations and refund cancellations/failed campaigns once | Atomic wallet services and immutable transaction history |
 | Seller | Create own products and draft campaigns | Seller panel, typed forms, serializer ownership checks |
 | Seller | Publish valid draft campaigns | Owner-only publish action |
 | Seller | View own products, campaigns, orders; advance fulfillment | Seller dashboard and order transitions |
@@ -34,7 +36,7 @@ when a cancelled reservation is reactivated.
 
 ## Explicit limits
 
-No payments, refunds, inventory synchronization outside campaign capacity, messaging,
+No real bank payments, withdrawals, inventory synchronization outside campaign capacity, messaging,
 email verification, password reset, multi-currency, address management, or background
 queue infrastructure. These are future extensions, not implied working features.
 This is a local demonstrator. A public production launch needs deployment hardening,

@@ -15,7 +15,9 @@ from market.services import cancel_reservation, publish_campaign, reserve, settl
 
 def fixtures():
     seller = User.objects.create_user("seller", password="Strong-Test-2026!", role="seller")
-    buyer = User.objects.create_user("buyer", password="Strong-Test-2026!", role="buyer")
+    buyer = User.objects.create_user(
+        "buyer", password="Strong-Test-2026!", role="buyer", wallet_balance=10_000_000
+    )
     category = Category.objects.create(name="خوراکی", slug="food")
     product = Product.objects.create(
         name="قهوه", seller=seller, category=category, retail_price=100000, description="نمونه"
@@ -52,7 +54,7 @@ class BusinessTests(TestCase):
         reserve(self.campaign.pk, self.buyer, 2)
         with self.assertRaises(BusinessError):
             reserve(self.campaign.pk, self.buyer, 2)
-        other = User.objects.create_user("other")
+        other = User.objects.create_user("other", wallet_balance=10_000_000)
         reserve(self.campaign.pk, other, 3)
         third = User.objects.create_user("third")
         with self.assertRaises(BusinessError):
@@ -286,7 +288,7 @@ class ConcurrencyTests(TransactionTestCase):
         self.assertEqual(connection.settings_dict["OPTIONS"]["transaction_mode"], "IMMEDIATE")
         self.campaign.min_quantity = self.campaign.capacity = self.campaign.buyer_limit = 1
         self.campaign.save()
-        other = User.objects.create_user("other")
+        other = User.objects.create_user("other", wallet_balance=10_000_000)
         barrier = Barrier(2)
 
         def compete(buyer_id):
