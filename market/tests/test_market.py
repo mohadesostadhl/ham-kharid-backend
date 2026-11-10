@@ -261,7 +261,7 @@ class ApiTests(TestCase):
             call_command("seed_demo")
 
     def test_health_and_filters(self):
-        self.assertEqual(self.client.get("/api/health/").data["database"], "sqlite")
+        self.assertEqual(self.client.get("/api/health/").data["database"], "postgresql")
         self.assertEqual(self.client.get("/api/campaigns/?category=missing").data["count"], 0)
         self.assertEqual(self.client.get("/api/campaigns/?search=قهوه").data["count"], 1)
 
@@ -283,9 +283,8 @@ class ConcurrencyTests(TransactionTestCase):
     def setUp(self):
         self.seller, self.buyer, self.product, self.campaign = fixtures()
 
-    def test_competing_reservations_do_not_oversell_sqlite(self):
-        self.assertEqual(connection.vendor, "sqlite")
-        self.assertEqual(connection.settings_dict["OPTIONS"]["transaction_mode"], "IMMEDIATE")
+    def test_competing_reservations_do_not_oversell_postgresql(self):
+        self.assertEqual(connection.vendor, "postgresql")
         self.campaign.min_quantity = self.campaign.capacity = self.campaign.buyer_limit = 1
         self.campaign.save()
         other = User.objects.create_user("other", wallet_balance=10_000_000)

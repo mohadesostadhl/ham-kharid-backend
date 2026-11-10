@@ -1,9 +1,10 @@
 # Hamkharid API
 
-Django + Django REST Framework + SQLite. Independent local Git repository.
+Django + Django REST Framework + PostgreSQL. Independent local Git repository.
 
 ```powershell
-uv sync --locked
+uv sync
+docker compose up -d postgres
 uv run python manage.py migrate
 uv run python manage.py seed_demo
 uv run python manage.py runserver 127.0.0.1:8000

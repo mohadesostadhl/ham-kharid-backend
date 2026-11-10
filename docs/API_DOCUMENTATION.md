@@ -5,7 +5,7 @@ origin in the browser. Session cookies and `X-CSRFToken` protect mutations.
 
 | Method | Path | Access | Purpose |
 |---|---|---|---|
-| GET | health/ | Public | Database connectivity; `{status:"ok",database:"sqlite"}` |
+| GET | health/ | Public | Database connectivity; `{status:"ok",database:"postgresql"}` |
 | GET | auth/session/ | Public | Current user/null and `csrf_token` |
 | POST | auth/signup/ | CSRF | username, password, display_name, role (buyer/seller) |
 | POST | auth/login/ | CSRF | username, password; rotates CSRF token |

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
@@ -46,14 +47,38 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 WSGI_APPLICATION = "config.wsgi.application"
 AUTH_USER_MODEL = "market.User"
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.environ.get("SQLITE_PATH", str(BASE_DIR / "db.sqlite3")),
-        "OPTIONS": {"transaction_mode": "IMMEDIATE", "timeout": 20},
-        "TEST": {"NAME": str(BASE_DIR / "test.sqlite3")},
+
+
+def _postgres_database():
+    """Build Django's PostgreSQL settings from DATABASE_URL or DB_* variables."""
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        parsed = urlparse(database_url)
+        if parsed.scheme not in {"postgres", "postgresql"}:
+            raise RuntimeError("DATABASE_URL must use the postgres:// or postgresql:// scheme.")
+        query = parse_qs(parsed.query)
+        options = {key: values[-1] for key, values in query.items()}
+        return {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": unquote(parsed.path.lstrip("/")),
+            "USER": unquote(parsed.username or ""),
+            "PASSWORD": unquote(parsed.password or ""),
+            "HOST": parsed.hostname or "localhost",
+            "PORT": str(parsed.port or 5432),
+            "OPTIONS": options,
+        }
+
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("POSTGRES_DB", "hamkharid"),
+        "USER": os.environ.get("POSTGRES_USER", "hamkharid"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "hamkharid"),
+        "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
-}
+
+
+DATABASES = {"default": _postgres_database()}
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

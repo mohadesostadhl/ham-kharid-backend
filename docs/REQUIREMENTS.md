@@ -29,7 +29,7 @@ when a cancelled reservation is reactivated.
 - Loading, empty, error, success, disabled, and confirmation states.
 - Semantic controls, visible keyboard focus, native modal dialog, reduced-motion support.
 - Typed API contracts, Vue Composition API, focused service functions and components.
-- SQLite immediate transactions serialize writes; database checks enforce capacity invariants.
+- PostgreSQL transactions and row locks serialize competing reservations; database checks enforce capacity invariants.
 - Testable business rules and end-to-end integration; Ruff, ESLint, Prettier, TypeScript.
 - Reproducible fictional demo data; seed command refuses to run outside DEBUG mode.
 - Independent local Git histories, Conventional Commits, feature merges, no publishing.

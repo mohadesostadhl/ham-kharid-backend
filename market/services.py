@@ -94,7 +94,7 @@ def publish_campaign(campaign_id: int, seller: User) -> Campaign:
 def reserve(campaign_id: int, buyer: User, quantity: int) -> Reservation:
     if buyer.role != User.Role.BUYER:
         raise BusinessError("رزرو فقط برای حساب خریدار امکان‌پذیر است.")
-    # SQLite BEGIN IMMEDIATE acquires the write lock before reading capacity.
+    # PostgreSQL row locks protect the capacity check from concurrent reservations.
     # select_for_update also keeps this safe if later migrated to PostgreSQL.
     campaign = Campaign.objects.select_for_update().get(pk=campaign_id)
     if campaign.status not in (Campaign.Status.ACTIVE, Campaign.Status.FUNDED):

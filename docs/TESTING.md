@@ -5,7 +5,7 @@ No public deployment is part of this delivery.
 
 ## Backend
 
-`uv run python manage.py test --noinput`: 36 tests pass against a file-backed SQLite
+`uv run python manage.py test --noinput`: 43 tests pass against PostgreSQL
 test database. Tests cover public visibility, search/filtering, seller creation and
 publication, buyer reserve/cancel, cumulative limits and capacity, deadlines, success
 and failure settlement, one-order idempotence, access control, password/role validation,
@@ -22,7 +22,8 @@ simultaneous retries of one top-up produce one credit.
 
 Test classes use the MD5 password hasher only to avoid slow password hashing in unit
 tests. Application and seeded users retain Django's default secure password hasher.
-Database `test.sqlite3` is isolated from `db.sqlite3`; do not run test commands concurrently.
+Tests use an isolated PostgreSQL test database; do not run test commands concurrently
+against the same database server if the test database name is reused.
 
 Ruff lint and formatting pass. Django system checks and migration drift checks pass.
 Demo seeding and one-shot deadline processing have been executed.

@@ -6,7 +6,7 @@ flowchart LR
   Nuxt -->|HTTP proxy| API[Django REST API :8000]
   API --> Serializers[Validation and permissions]
   Serializers --> Services[Atomic business services]
-  Services --> DB[(SQLite file)]
+  Services --> DB[(PostgreSQL)]
   Worker[process_deadlines --watch] --> Services
 ```
 
@@ -24,16 +24,16 @@ paid amount. No generic repository layer or unnecessary inheritance is used.
 
 ## Transaction strategy
 
-SQLite uses `OPTIONS.transaction_mode = IMMEDIATE`, with a 20-second busy timeout.
+PostgreSQL provides row-level locking and transactional integrity for concurrent writes.
 Every reservation, cancellation, publication, settlement, and fulfillment operation
-runs in `transaction.atomic`. SQLite acquires its database-wide write lock before
+ runs in `transaction.atomic`. PostgreSQL acquires row locks before
 the service reads capacity. Concurrent writers wait and then re-read committed data.
 This prevents the stale read/check/write race. Database check constraints additionally
 reject invalid capacity counters and thresholds.
 
-`select_for_update()` is intentionally harmless on SQLite; safety comes from
+`select_for_update()` provides the row-level lock; safety comes from
 BEGIN IMMEDIATE, not row locking. The calls retain a clear locking boundary if the
-database is migrated later. SQLite serializes unrelated writes too, so this design
+database is migrated later. PostgreSQL allows unrelated writes to proceed concurrently, so this design
 is appropriate for the local academic workload rather than high-throughput commerce.
 Transactions are kept short and do not include network calls.
 
@@ -48,12 +48,10 @@ Idempotence is enforced both by terminal campaign states and a unique order rela
 
 ## Tradeoffs
 
-- SQLite is the user's chosen default; no database server is required.
+- PostgreSQL is the default database and is supplied locally through Docker Compose.
 - A simple management command handles deadlines; a separate process must run it.
 - Published conditions cannot be changed, avoiding accidental buyer contract changes.
 - Integer toman prices avoid decimal rounding ambiguity.
 - Client rendering simplifies session state; search-engine rendering can be added later.
 - Proxy origin is set at build time via API_UPSTREAM; rebuild when changing it.
 - DRF in-memory throttling is suitable locally. Use shared cache and edge controls for public use.
-
-SQLite configuration follows [Django's database documentation](https://docs.djangoproject.com/en/5.2/ref/databases/#sqlite-notes).

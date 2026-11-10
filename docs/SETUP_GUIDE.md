@@ -1,7 +1,7 @@
 # Local setup
 
-Requires Git, uv, Python 3.13 (uv can install it), and Node 24.21 or compatible newer
-Node 24. SQLite is included with Python. No PostgreSQL or Docker is needed.
+Requires Git, uv, Python 3.13 (uv can install it), Node 24.21 or compatible newer
+Node, and Docker Desktop for the local PostgreSQL service.
 
 The parent directory contains two independent Git projects. Always run Git commands
 inside backend or frontend. No remote is configured. On Windows use `npm.cmd`
@@ -11,16 +11,17 @@ when PowerShell execution policy prevents running npm.ps1.
 
 ```powershell
 cd D:\Projects\uni\te\backend
-uv sync --locked
+uv sync
+docker compose up -d postgres
 uv run python manage.py migrate
 uv run python manage.py seed_demo
 uv run python manage.py runserver 127.0.0.1:8000
 ```
 
-`db.sqlite3` is generated and ignored. Seeding is idempotent: repeating it does not
-duplicate campaigns or reset reservations/passwords. Existing deadlines are retained;
-for a fresh presentation, use a new SQLITE_PATH before migrate/seed. Do not overwrite
-an existing database containing work you want to keep.
+PostgreSQL data is stored in the `hamkharid-postgres-data` Docker volume. Seeding is
+idempotent: repeating it does not duplicate campaigns or reset reservations/passwords.
+Existing deadlines are retained. To use another PostgreSQL instance, set the `DB_*`
+variables in the shell or provide a `DATABASE_URL`.
 
 ## Terminal 2 — frontend
 
