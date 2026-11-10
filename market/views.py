@@ -15,7 +15,16 @@ from rest_framework.views import APIView
 from . import serializers as s
 from . import services
 from .exceptions import BusinessError
-from .models import Campaign, Category, Order, Product, Reservation, User, WalletTransaction
+from .models import (
+    Campaign,
+    Category,
+    Order,
+    Product,
+    PurchaseRequest,
+    Reservation,
+    User,
+    WalletTransaction,
+)
 
 
 class SessionView(APIView):
@@ -186,6 +195,46 @@ class CampaignViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         reservation = services.reserve(campaign.pk, request.user, **serializer.validated_data)
         return Response(s.ReservationSerializer(reservation).data, status=201)
+
+
+class PurchaseRequestViewSet(viewsets.GenericViewSet):
+    queryset = PurchaseRequest.objects.select_related("buyer").prefetch_related("offers__seller")
+    serializer_class = s.PurchaseRequestSerializer
+
+    def list(self, request):
+        page = self.paginate_queryset(self.get_queryset())
+        return self.get_paginated_response(self.get_serializer(page, many=True).data)
+
+    def retrieve(self, request, pk=None):
+        return Response(self.get_serializer(self.get_object()).data)
+
+    def create(self, request):
+        if request.user.role != User.Role.BUYER:
+            raise BusinessError("ثبت درخواست خرید فقط برای خریداران امکان‌پذیر است.")
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(buyer=request.user)
+        return Response(serializer.data, status=201)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def offer(self, request, pk=None):
+        purchase_request = self.get_object()
+        serializer = s.PurchaseOfferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        offer = services.submit_purchase_offer(
+            purchase_request.pk, request.user, **serializer.validated_data
+        )
+        return Response(s.PurchaseOfferSerializer(offer).data, status=201)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def accept(self, request, pk=None):
+        purchase_request = self.get_object()
+        serializer = s.AcceptOfferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = services.accept_purchase_offer(
+            purchase_request.pk, request.user, serializer.validated_data["offer_id"]
+        )
+        return Response(self.get_serializer(result).data)
 
 
 class ReservationViewSet(viewsets.ReadOnlyModelViewSet):

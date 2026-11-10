@@ -120,6 +120,54 @@ class Order(models.Model):
         ordering = ["-id"]
 
 
+class PurchaseRequest(models.Model):
+    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    title = models.CharField(max_length=160)
+    description = models.TextField(max_length=3000)
+    quantity = models.PositiveIntegerField()
+    unit = models.CharField(max_length=30, default="عدد")
+    max_unit_price = models.PositiveBigIntegerField()
+    deadline = models.DateTimeField()
+    status = models.CharField(
+        max_length=10, choices=[("open", "باز"), ("closed", "انتخاب پیشنهاد")], default="open"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-id"]
+        constraints = [
+            models.CheckConstraint(condition=Q(quantity__gt=0), name="request_quantity_positive"),
+            models.CheckConstraint(
+                condition=Q(max_unit_price__gt=0), name="request_price_positive"
+            ),
+        ]
+
+
+class PurchaseOffer(models.Model):
+    purchase_request = models.ForeignKey(
+        PurchaseRequest, on_delete=models.PROTECT, related_name="offers"
+    )
+    seller = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    unit_price = models.PositiveBigIntegerField()
+    description = models.TextField(max_length=1500)
+    is_accepted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["unit_price", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["purchase_request", "seller"], name="one_seller_request"
+            ),
+            models.UniqueConstraint(
+                fields=["purchase_request"],
+                condition=Q(is_accepted=True),
+                name="one_accepted_offer",
+            ),
+            models.CheckConstraint(condition=Q(unit_price__gt=0), name="offer_price_positive"),
+        ]
+
+
 class WalletTransaction(models.Model):
     class Kind(models.TextChoices):
         TOP_UP = "top_up", "شارژ نمایشی"

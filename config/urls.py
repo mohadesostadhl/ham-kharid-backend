@@ -8,6 +8,7 @@ router = DefaultRouter()
 router.register("categories", views.CategoryViewSet)
 router.register("products", views.ProductViewSet)
 router.register("campaigns", views.CampaignViewSet)
+router.register("purchase-requests", views.PurchaseRequestViewSet)
 router.register("reservations", views.ReservationViewSet, basename="reservation")
 router.register("orders", views.OrderViewSet, basename="order")
 

@@ -5,7 +5,15 @@ from django.db import transaction
 from django.utils import timezone
 
 from .exceptions import BusinessError
-from .models import Campaign, Order, Reservation, User, WalletTransaction
+from .models import (
+    Campaign,
+    Order,
+    PurchaseOffer,
+    PurchaseRequest,
+    Reservation,
+    User,
+    WalletTransaction,
+)
 
 
 def _change_balance(
@@ -62,6 +70,39 @@ def _refund_reservation(reservation: Reservation) -> None:
 def require_seller(user: User) -> None:
     if user.role != User.Role.SELLER:
         raise BusinessError("این بخش ویژهٔ فروشندگان است.")
+
+
+def require_open_request(purchase_request: PurchaseRequest) -> None:
+    if purchase_request.status != "open" or purchase_request.deadline <= timezone.now():
+        raise BusinessError("این درخواست بسته شده یا مهلت آن پایان یافته است.")
+
+
+@transaction.atomic
+def submit_purchase_offer(request_id: int, seller: User, **data) -> PurchaseOffer:
+    require_seller(seller)
+    purchase_request = PurchaseRequest.objects.select_for_update().get(pk=request_id)
+    require_open_request(purchase_request)
+    if not 0 < data["unit_price"] <= purchase_request.max_unit_price:
+        raise BusinessError("قیمت پیشنهاد باید مثبت و حداکثر برابر سقف قیمت خریدار باشد.")
+    if purchase_request.offers.filter(seller=seller).exists():
+        raise BusinessError("برای هر درخواست فقط یک پیشنهاد می‌توانید ثبت کنید.")
+    return PurchaseOffer.objects.create(purchase_request=purchase_request, seller=seller, **data)
+
+
+@transaction.atomic
+def accept_purchase_offer(request_id: int, buyer: User, offer_id: int) -> PurchaseRequest:
+    purchase_request = PurchaseRequest.objects.select_for_update().get(pk=request_id)
+    if buyer.role != User.Role.BUYER or purchase_request.buyer_id != buyer.pk:
+        raise BusinessError("فقط ثبت‌کنندهٔ درخواست می‌تواند پیشنهاد را انتخاب کند.")
+    require_open_request(purchase_request)
+    offer = purchase_request.offers.filter(pk=offer_id).first()
+    if not offer:
+        raise BusinessError("پیشنهاد مربوط به این درخواست نیست.")
+    offer.is_accepted = True
+    offer.save(update_fields=["is_accepted"])
+    purchase_request.status = "closed"
+    purchase_request.save(update_fields=["status"])
+    return purchase_request
 
 
 def require_owner(campaign: Campaign, user: User) -> None:

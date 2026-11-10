@@ -3,7 +3,17 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Campaign, Category, Order, Product, Reservation, User, WalletTransaction
+from .models import (
+    Campaign,
+    Category,
+    Order,
+    Product,
+    PurchaseOffer,
+    PurchaseRequest,
+    Reservation,
+    User,
+    WalletTransaction,
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -166,3 +176,46 @@ class OrderStatusSerializer(serializers.Serializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(max_length=128, trim_whitespace=False)
+
+
+class PurchaseOfferSerializer(serializers.ModelSerializer):
+    seller_name = serializers.CharField(source="seller.display_name", read_only=True)
+    unit_price = serializers.IntegerField(min_value=1, max_value=10_000_000_000)
+
+    class Meta:
+        model = PurchaseOffer
+        fields = ["id", "seller", "seller_name", "unit_price", "description", "is_accepted"]
+        read_only_fields = ["seller", "is_accepted"]
+
+
+class PurchaseRequestSerializer(serializers.ModelSerializer):
+    buyer_name = serializers.CharField(source="buyer.display_name", read_only=True)
+    offers = PurchaseOfferSerializer(many=True, read_only=True)
+    quantity = serializers.IntegerField(min_value=1, max_value=100000)
+    max_unit_price = serializers.IntegerField(min_value=1, max_value=10_000_000_000)
+
+    class Meta:
+        model = PurchaseRequest
+        fields = [
+            "id",
+            "buyer",
+            "buyer_name",
+            "title",
+            "description",
+            "quantity",
+            "unit",
+            "max_unit_price",
+            "deadline",
+            "status",
+            "offers",
+        ]
+        read_only_fields = ["buyer", "status"]
+
+    def validate_deadline(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError("مهلت باید در آینده باشد.")
+        return value
+
+
+class AcceptOfferSerializer(serializers.Serializer):
+    offer_id = serializers.IntegerField(min_value=1)
