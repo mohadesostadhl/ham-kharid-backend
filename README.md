@@ -26,3 +26,5 @@ See the setup guide for permissions and marketplace management actions.
 See [setup and development demo accounts](docs/SETUP_GUIDE.md),
 [architecture](docs/ARCHITECTURE.md), [test results](docs/TESTING.md),
 and [Persian presentation guide](docs/PRESENTATION_GUIDE.md).
+
+For Neon and Vercel production setup, see [Vercel deployment](docs/VERCEL_DEPLOYMENT.md).
